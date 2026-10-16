@@ -51,6 +51,29 @@ const productSchema = new mongoose.Schema({
 }, { timestamps: true, versionKey: false });
 const Product = mongoose.model("Product", productSchema);
 
+const siteSettingsSchema = new mongoose.Schema({
+  key: { type: String, unique: true, default: "main" },
+  announcementEnabled: { type: Boolean, default: true },
+  announcementText: { type: String, default: "✨ Special offers are live — explore CyberTech deals today!" },
+  announcementEnd: { type: String, default: "" },
+  popupEnabled: { type: Boolean, default: false },
+  popupTitle: { type: String, default: "A special offer for you!" },
+  popupText: { type: String, default: "Explore our latest courses, digital services, and test preparation material." },
+  popupImage: { type: String, default: "" },
+  popupButtonText: { type: String, default: "Explore offers" },
+  popupButtonUrl: { type: String, default: "#marketplace" },
+  updatedAt: { type: Date, default: Date.now }
+}, { versionKey: false });
+const SiteSettings = mongoose.model("SiteSettings", siteSettingsSchema);
+const DEFAULT_SITE_SETTINGS = {
+  key: "main", announcementEnabled: true,
+  announcementText: "✨ Special offers are live — explore CyberTech deals today!",
+  announcementEnd: "", popupEnabled: false, popupTitle: "A special offer for you!",
+  popupText: "Explore our latest courses, digital services, and test preparation material.",
+  popupImage: "", popupButtonText: "Explore offers", popupButtonUrl: "#marketplace"
+};
+
+
 const seedProducts = [
   {
     "id": "c1",
@@ -261,6 +284,42 @@ app.post("/api/admin/logout", (req, res, next) => {
   });
 });
 
+
+app.get("/api/site-settings", async (req, res, next) => {
+  try {
+    const settings = await SiteSettings.findOne({ key: "main" }).lean();
+    res.json({ settings: { ...DEFAULT_SITE_SETTINGS, ...(settings || {}) } });
+  } catch (err) { next(err); }
+});
+
+app.get("/api/admin/site-settings", requireAdmin, async (req, res, next) => {
+  try {
+    const settings = await SiteSettings.findOne({ key: "main" }).lean();
+    res.json({ settings: { ...DEFAULT_SITE_SETTINGS, ...(settings || {}) } });
+  } catch (err) { next(err); }
+});
+
+app.put("/api/admin/site-settings", requireAdmin, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const clean = {
+      key: "main",
+      announcementEnabled: Boolean(b.announcementEnabled),
+      announcementText: String(b.announcementText || "").slice(0, 240),
+      announcementEnd: String(b.announcementEnd || "").slice(0, 40),
+      popupEnabled: Boolean(b.popupEnabled),
+      popupTitle: String(b.popupTitle || "").slice(0, 140),
+      popupText: String(b.popupText || "").slice(0, 1200),
+      popupImage: String(b.popupImage || "").slice(0, 2200000),
+      popupButtonText: String(b.popupButtonText || "Explore offers").slice(0, 60),
+      popupButtonUrl: String(b.popupButtonUrl || "#marketplace").slice(0, 500),
+      updatedAt: new Date()
+    };
+    await SiteSettings.findOneAndUpdate({ key: "main" }, { $set: clean }, { upsert: true, new: true, runValidators: true });
+    res.json({ ok: true, settings: clean });
+  } catch (err) { next(err); }
+});
+
 app.get("/api/products", async (req, res, next) => {
   try {
     const products = await Product.find({ published: true }).sort({ createdAt: 1 }).lean();
@@ -321,6 +380,7 @@ app.use((err, req, res, next) => {
 
 async function start() {
   await mongoose.connect(MONGODB_URI);
+  await SiteSettings.updateOne({ key: "main" }, { $setOnInsert: DEFAULT_SITE_SETTINGS }, { upsert: true });
   const count = await Product.countDocuments();
   if (count === 0) {
     await Product.insertMany(seedProducts);
