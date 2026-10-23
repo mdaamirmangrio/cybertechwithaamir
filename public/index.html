@@ -76,8 +76,9 @@ body{background:radial-gradient(ellipse at 12% 0%,rgba(79,139,255,.13),transpare
 </div></section>
 <section class="section" id="marketplace"><div class="container">
  <div class="section-head"><div><div class="kicker">THE MARKETPLACE</div><h2>Find what moves you forward.</h2><p>Explore resources selected to help you learn, build, and prepare.</p></div></div>
+ <div class="toolbar"><input id="searchInput" class="field search" type="search" placeholder="Search by course, service, or material name…" aria-label="Search products"><select id="categoryFilter" class="field" aria-label="Filter category"><option value="">All categories</option></select><select id="sortFilter" class="field" aria-label="Sort products"><option value="featured">Featured first</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option><option value="az">Name: A–Z</option></select></div>
  <div class="tabs" role="tablist" aria-label="Product categories"><button class="tab active" data-type="course" role="tab" aria-selected="true">Courses</button><button class="tab" data-type="service" role="tab" aria-selected="false">Services</button><button class="tab" data-type="material" role="tab" aria-selected="false">Test Material</button></div>
- <div class="toolbar"><input id="searchInput" class="field search" type="search" placeholder="Search courses, services, materials…" aria-label="Search products"><select id="categoryFilter" class="field" aria-label="Filter category"><option value="">All categories</option></select><select id="sortFilter" class="field" aria-label="Sort products"><option value="featured">Featured first</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option><option value="az">Name: A–Z</option></select></div>
+
  <div class="search-results-note" id="searchResultsNote" hidden></div><div class="product-grid" id="productGrid" aria-live="polite"></div>
 </div></section>
 <section class="trust-strip" id="why-us"><div class="container trust-grid">
@@ -133,7 +134,7 @@ body{background:radial-gradient(ellipse at 12% 0%,rgba(79,139,255,.13),transpare
 <script>
 (() => {
 "use strict";
-const WA_NUMBER="923141352808", GROUP_URL="https://chat.whatsapp.com/Jod1qdrAaTz79wFYCgBiGa", MAX_IMAGE_BYTES=1.5*1024*1024;
+const WA_NUMBER="923141352808", GROUP_URL="https://chat.whatsapp.com/Jod1qdrAaTz79wFYCgBiGa", MAX_IMAGE_BYTES=10*1024*1024;
 const icons={course:"🎓",service:"⚡",material:"📘"};
 const seedProducts=[
 {id:"c1",type:"course",name:"Sigma X — AI Full Stack Web Development",tutor:"Apna College",description:"A structured path through modern web development, projects, and practical coding.",price:999,originalPrice:1999,category:"Web Development",duration:"Lifetime access",image:"",published:true,featured:true},
@@ -184,7 +185,7 @@ function renderPublic(){
  $("statProducts").textContent=products.filter(p=>p.published).length+"+";
 }
 function buyProduct(id){const p=products.find(x=>x.id===id);if(!p)return;const msg=`Assalam-o-Alaikum CyberTech (Aamir)! I'm interested in:\nProduct: ${p.name}\nCategory: ${typeLabel(p.type)}\nPrice: ${money(p.price)}\nPlease share availability and payment instructions.`;window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`,"_blank","noopener,noreferrer")}
-function switchType(type){activeType=type;$("searchInput").value="";document.querySelectorAll(".tab").forEach(b=>{const on=b.dataset.type===type;b.classList.toggle("active",on);b.setAttribute("aria-selected",String(on))});$("categoryFilter").value="";renderPublic()}
+function switchType(type){activeType=type;document.querySelectorAll(".tab").forEach(b=>{const on=b.dataset.type===type;b.classList.toggle("active",on);b.setAttribute("aria-selected",String(on))});$("categoryFilter").value="";renderPublic()}
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>switchType(b.dataset.type)));
 $("productGrid").addEventListener("click",e=>{const btn=e.target.closest("[data-buy]"),add=e.target.closest("[data-cart-add]");if(btn)buyProduct(btn.dataset.buy);if(add)addToCart(add.dataset.cartAdd)});
 ["searchInput","categoryFilter","sortFilter"].forEach(id=>$(id).addEventListener(id==="searchInput"?"input":"change",renderPublic));
@@ -209,7 +210,30 @@ function refreshAdmin(){renderPublic();renderOverview();renderAdminList()}
 function openEditor(type="course",p=null){adminType=type;$("productForm").reset();$("productId").value=p?.id||"";$("pType").value=p?.type||type;$("pName").value=p?.name||"";$("pDescription").value=p?.description||"";$("pPrice").value=p?.price??"";$("pOriginal").value=p?.originalPrice||"";$("pTutor").value=p?.tutor||"";$("pCategory").value=p?.category||"";$("pDuration").value=p?.duration||"";$("pPublished").checked=p?p.published:true;$("pFeatured").checked=p?p.featured:false;currentImage=p?.image||"";renderImagePreview();$("editorTitle").textContent=p?"Edit product":"Add product";updateConditionalFields();showAdminSection("editor");$("pType").onchange=updateConditionalFields}
 function updateConditionalFields(){const type=$("pType").value;$("tutorGroup").classList.toggle("hidden",type!=="course");$("categoryGroup").classList.remove("hidden");$("durationGroup").classList.toggle("hidden",type==="material")}
 function renderImagePreview(){$("imagePreview").innerHTML=currentImage?`<img src="${currentImage}" alt="Selected image preview">`:"Image preview"}
-$("pImage").addEventListener("change",e=>{const file=e.target.files?.[0];if(!file)return;if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)){showToast("Choose a JPG, PNG, WEBP, or GIF image.");e.target.value="";return}if(file.size>MAX_IMAGE_BYTES){showToast("Image is too large. Please choose an image under 1.5 MB.");e.target.value="";return}const reader=new FileReader();reader.onload=()=>{currentImage=String(reader.result);renderImagePreview()};reader.onerror=()=>showToast("Could not read that image. Please try again.");reader.readAsDataURL(file)});
+$("pImage").addEventListener("change",e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)){showToast("Choose a JPG, PNG, WEBP, or GIF image.");e.target.value="";return}
+ if(file.size>MAX_IMAGE_BYTES){showToast("Please choose an image smaller than 10 MB.");e.target.value="";return}
+ const reader=new FileReader();
+ reader.onload=()=>{
+  const img=new Image();
+  img.onload=()=>{
+   try{
+    const scale=Math.min(1,1280/img.width,720/img.height),canvas=document.createElement("canvas");
+    canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));
+    const ctx=canvas.getContext("2d");ctx.fillStyle="#ffffff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    let quality=.82,dataUrl=canvas.toDataURL("image/jpeg",quality);
+    while(dataUrl.length>1100000&&quality>.4){quality-=.08;dataUrl=canvas.toDataURL("image/jpeg",quality)}
+    if(dataUrl.length>2200000){showToast("Could not compress this image enough. Please choose another image.");return}
+    currentImage=dataUrl;renderImagePreview();showToast("Image ready to upload.");
+   }catch(err){showToast("Could not process that image. Please try another one.")}
+  };
+  img.onerror=()=>showToast("Could not read that image. Please try another one.");
+  img.src=String(reader.result);
+ };
+ reader.onerror=()=>showToast("Could not read that image. Please try again.");
+ reader.readAsDataURL(file);
+});
 $("removeImage").addEventListener("click",()=>{currentImage="";$("pImage").value="";renderImagePreview()});
 $("productForm").addEventListener("submit",async e=>{e.preventDefault();const id=$("productId").value||"p_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,7);const old=products.find(p=>p.id===id);const price=Number($("pPrice").value),original=Number($("pOriginal").value)||0;if(!Number.isFinite(price)||price<0||!Number.isFinite(original)||original<0){showToast("Please enter valid prices.");return}const p={id,type:$("pType").value,name:$("pName").value.trim(),description:$("pDescription").value.trim(),price,originalPrice:original,tutor:$("pTutor").value.trim(),category:$("pCategory").value.trim(),duration:$("pDuration").value.trim(),image:currentImage,published:$("pPublished").checked,featured:$("pFeatured").checked};if(!p.name||!p.description){showToast("Please complete the required fields.");return}if(old){products=products.map(x=>x.id===id?p:x)}else products.push(p);if(!(await saveProducts())){products=old?products.map(x=>x.id===id?old:x).concat([]):products.filter(x=>x.id!==id);return}adminType=p.type;renderPublic();renderOverview();renderAdminList();showAdminSection(adminType);showToast(old?"Product updated":"Product added")});
 

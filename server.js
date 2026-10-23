@@ -20,7 +20,7 @@ if (!MONGODB_URI || !ADMIN_USERNAME || !ADMIN_PASSWORD || !SESSION_SECRET) {
 
 app.set("trust proxy", 1);
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(express.json({ limit: "3mb" }));
+app.use(express.json({ limit: "15mb" }));
 app.use(session({
   name: "cybertech.sid",
   secret: SESSION_SECRET,
